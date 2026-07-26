@@ -1,0 +1,530 @@
+#include <iostream>
+#include <string>
+using namespace std;
+
+const int SEAT_ROWS    = 12;
+const int SEAT_COLUMNS = 6;
+const int CITY_COUNT   = 8;
+
+string getCityName(int cityNumber)
+{
+    string cityNames[CITY_COUNT] = {
+        "Karachi", "Hyderabad", "Multan", "Faisalabad",
+        "Lahore", "Islamabad", "Peshawar", "Quetta"
+    };
+    return cityNames[cityNumber - 1];
+}
+
+char getColumnLetter(int column)
+{
+    return char('A' + column - 1);
+}
+
+void loadSeatMap(int transport, int carSeats[], int busSeats[], int planeSeats[], int currentSeats[])
+{
+    for (int i = 0; i < SEAT_ROWS * SEAT_COLUMNS; i++)
+    {
+        if (transport == 1) currentSeats[i] = carSeats[i];
+        else if (transport == 2) currentSeats[i] = busSeats[i];
+        else currentSeats[i] = planeSeats[i];
+    }
+}
+
+void saveSeatMap(int transport, int carSeats[], int busSeats[], int planeSeats[], int currentSeats[])
+{
+    for (int i = 0; i < SEAT_ROWS * SEAT_COLUMNS; i++)
+    {
+        if (transport == 1) carSeats[i] = currentSeats[i];
+        else if (transport == 2) busSeats[i] = currentSeats[i];
+        else planeSeats[i] = currentSeats[i];
+    }
+}
+
+int printSeatMap(int seats[], int rows, int columns, int aisleAfter)
+{
+    cout << "                    F R O N T\n";
+    cout << "        ";
+    for (int column = 0; column < columns; column++)
+    {
+        cout << "  " << char('A' + column) << "  ";
+        if (column == aisleAfter - 1) cout << "     ";
+    }
+    cout << "\n";
+
+    int freeSeats = 0;
+    for (int row = 0; row < rows; row++)
+    {
+        cout << "   ";
+        if (row + 1 < 10) cout << "0";
+        cout << (row + 1) << "   ";
+        for (int column = 0; column < columns; column++)
+        {
+            if (seats[row * SEAT_COLUMNS + column] == 0) { cout << "  O  "; freeSeats++; }
+            else cout << "  X  ";
+            if (column == aisleAfter - 1) cout << " ||  ";
+        }
+        cout << "\n";
+    }
+    cout << "                    R E A R\n";
+    return freeSeats;
+}
+
+int main()
+{
+    int distanceTable[CITY_COUNT * CITY_COUNT] = {
+        0,    165,  895,  1075, 1215, 1410, 1565, 685,
+        165,  0,    740,  920,  1060, 1255, 1410, 700,
+        895,  740,  0,    230,  335,  530,  690,  770,
+        1075, 920,  230,  0,    130,  320,  480,  980,
+        1215, 1060, 335,  130,  0,    375,  520,  1010,
+        1410, 1255, 530,  320,  375,  0,    175,  1130,
+        1565, 1410, 690,  480,  520,  175,  0,    1080,
+        685,  700,  770,  980,  1010, 1130, 1080, 0
+    };
+
+    int carSeats[SEAT_ROWS * SEAT_COLUMNS]   = {0};
+    int busSeats[SEAT_ROWS * SEAT_COLUMNS]   = {0};
+    int planeSeats[SEAT_ROWS * SEAT_COLUMNS] = {0};
+    int currentSeats[SEAT_ROWS * SEAT_COLUMNS] = {0};
+
+    carSeats[0 * SEAT_COLUMNS + 1] = 1;
+    busSeats[0 * SEAT_COLUMNS + 0] = 1; busSeats[1 * SEAT_COLUMNS + 2] = 1; busSeats[3 * SEAT_COLUMNS + 1] = 1; busSeats[5 * SEAT_COLUMNS + 3] = 1; busSeats[7 * SEAT_COLUMNS + 0] = 1;
+    planeSeats[0 * SEAT_COLUMNS + 0] = 1; planeSeats[0 * SEAT_COLUMNS + 5] = 1; planeSeats[2 * SEAT_COLUMNS + 2] = 1; planeSeats[4 * SEAT_COLUMNS + 4] = 1; planeSeats[6 * SEAT_COLUMNS + 1] = 1; planeSeats[9 * SEAT_COLUMNS + 3] = 1;
+
+    char  ticketLetter[100];
+    int   ticketTransport[100];
+    int   ticketRow[100];
+    int   ticketColumn[100];
+    int   ticketFrom[100];
+    int   ticketTo[100];
+    int   ticketActive[100];
+    float ticketPrice[100];
+
+    int   ticketCount    = 0;
+    int   activeTickets  = 0;
+    float totalEarnings  = 0;
+    int   menuChoice;
+
+    do
+    {
+        cout << "\n";
+        cout << "============================================================\n";
+        cout << "               P A K I S T A N   T R A V E L\n";
+        cout << "                    E  X  P  R  E  S  S\n";
+        cout << "               Online Ticket Booking System\n";
+        cout << "============================================================\n";
+        cout << "   [1]  Book a Ticket\n";
+        cout << "   [2]  View Seat Availability\n";
+        cout << "   [3]  About / Help\n";
+        if (activeTickets > 0) cout << "   [4]  Cancel a Ticket\n";
+        cout << "   [0]  Exit\n";
+        cout << "------------------------------------------------------------\n";
+        cout << "   Select an option: ";
+        cin >> menuChoice;
+
+        switch (menuChoice)
+        {
+        case 1:
+        {
+            int  transport;
+            int  rows = 0, columns = 0, aisleAfter = 0;
+            char transportLetter = 'X';
+
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  STEP 1 of 7  :  CHOOSE YOUR TRANSPORT\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   [1]  Car  -  Private intercity cab (4 seats)\n";
+            cout << "   [2]  Bus  -  Luxury coach (40 seats)\n";
+            cout << "   [3]  Aeroplane  -  Domestic flight (72 seats)\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   Your choice: ";
+            cin >> transport;
+            while (transport < 1 || transport > 3)
+            {
+                cout << "   Invalid choice. Enter 1, 2 or 3: ";
+                cin >> transport;
+            }
+
+            if (transport == 1)      { rows = 2;  columns = 2; aisleAfter = 0; transportLetter = 'C'; }
+            else if (transport == 2) { rows = 10; columns = 4; aisleAfter = 2; transportLetter = 'B'; }
+            else                     { rows = 12; columns = 6; aisleAfter = 3; transportLetter = 'A'; }
+
+            int fromCity, toCity;
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  STEP 2 of 7  :  CHOOSE YOUR ROUTE\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   [1] Karachi     [2] Hyderabad   [3] Multan\n";
+            cout << "   [4] Faisalabad  [5] Lahore      [6] Islamabad\n";
+            cout << "   [7] Peshawar    [8] Quetta\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   Departure city (1-8): ";
+            cin >> fromCity;
+            while (fromCity < 1 || fromCity > 8)
+            {
+                cout << "   Invalid city. Enter 1 to 8: ";
+                cin >> fromCity;
+            }
+            cout << "   Arrival city   (1-8): ";
+            cin >> toCity;
+            while (toCity < 1 || toCity > 8 || toCity == fromCity)
+            {
+                if (toCity == fromCity) cout << "   Arrival must differ from departure. Try again: ";
+                else cout << "   Invalid city. Enter 1 to 8: ";
+                cin >> toCity;
+            }
+
+            int distanceKm = distanceTable[(fromCity - 1) * CITY_COUNT + (toCity - 1)];
+            float baseFare;
+            if (transport == 1) baseFare = distanceKm * 22;
+            else if (transport == 2) baseFare = distanceKm * 4;
+            else baseFare = 6000 + distanceKm * 14;
+
+            int travelClass;
+            float classMultiplier = 1.0;
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  STEP 3 of 7  :  CHOOSE TRAVEL CLASS\n";
+            cout << "------------------------------------------------------------\n";
+            if (transport == 1)      { cout << "   [1]  Economy            (standard fare)\n"; cout << "   [2]  Premium AC         (+40%)\n"; }
+            else if (transport == 2) { cout << "   [1]  Standard           (standard fare)\n"; cout << "   [2]  Executive          (+60%)\n"; }
+            else                     { cout << "   [1]  Economy            (standard fare)\n"; cout << "   [2]  Business           (+120%)\n"; }
+            cout << "------------------------------------------------------------\n";
+            cout << "   Class number: ";
+            cin >> travelClass;
+            while (travelClass < 1 || travelClass > 2)
+            {
+                cout << "   Invalid class. Enter 1 or 2: ";
+                cin >> travelClass;
+            }
+            if (travelClass == 2)
+            {
+                if (transport == 1) classMultiplier = 1.4;
+                else if (transport == 2) classMultiplier = 1.6;
+                else classMultiplier = 2.2;
+            }
+
+            loadSeatMap(transport, carSeats, busSeats, planeSeats, currentSeats);
+
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  STEP 4 of 7  :  SELECT YOUR SEAT\n";
+            cout << "------------------------------------------------------------\n";
+            printSeatMap(currentSeats, rows, columns, aisleAfter);
+            cout << "------------------------------------------------------------\n";
+            cout << "   O = available        X = booked        || = aisle\n";
+            cout << "------------------------------------------------------------\n";
+
+            int chosenRow, chosenColumn, seatChosen = 0;
+            while (seatChosen == 0)
+            {
+                cout << "   Enter row number (1 - " << rows << "): ";
+                cin >> chosenRow;
+                cout << "   Enter column number (1 - " << columns << "): ";
+                cin >> chosenColumn;
+                if (chosenRow < 1 || chosenRow > rows || chosenColumn < 1 || chosenColumn > columns)
+                    cout << "   >> That seat is out of range. Try again.\n";
+                else if (currentSeats[(chosenRow - 1) * SEAT_COLUMNS + (chosenColumn - 1)] == 1)
+                    cout << "   >> Sorry, that seat is already booked. Pick another.\n";
+                else { currentSeats[(chosenRow - 1) * SEAT_COLUMNS + (chosenColumn - 1)] = 1; seatChosen = 1; }
+            }
+
+            saveSeatMap(transport, carSeats, busSeats, planeSeats, currentSeats);
+
+            char  firstName[40];
+            char  lastName[40];
+            int   age;
+            float discountMultiplier = 1.0;
+            int   ageCategory = 0;
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  STEP 5 of 7  :  PASSENGER DETAILS\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   Enter first name : ";
+            cin >> firstName;
+            cout << "   Enter last name  : ";
+            cin >> lastName;
+            cout << "   Enter age        : ";
+            cin >> age;
+            while (age < 1 || age > 120)
+            {
+                cout << "   Please enter a valid age (1 - 120): ";
+                cin >> age;
+            }
+            if (age < 12)       { discountMultiplier = 0.5; ageCategory = 1; }
+            else if (age >= 60) { discountMultiplier = 0.8; ageCategory = 3; }
+            else                { discountMultiplier = 1.0; ageCategory = 2; }
+
+            float fareWithClass = baseFare * classMultiplier;
+            float finalFare     = fareWithClass * discountMultiplier;
+
+            int paymentMethod, pin;
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  STEP 6 of 7  :  PAYMENT\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   Amount payable:  Rs. " << finalFare << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   [1]  JazzCash\n";
+            cout << "   [2]  Easypaisa\n";
+            cout << "   [3]  Debit / Credit Card\n";
+            cout << "   [4]  Cash on Counter\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   Payment method: ";
+            cin >> paymentMethod;
+            while (paymentMethod < 1 || paymentMethod > 4)
+            {
+                cout << "   Invalid method. Enter 1 to 4: ";
+                cin >> paymentMethod;
+            }
+            switch (paymentMethod)
+            {
+            case 1:
+                cout << "   Enter your 4-digit JazzCash MPIN: ";
+                cin >> pin;
+                cout << "   Connecting to JazzCash ...\n   Payment successful via JazzCash.\n";
+                break;
+            case 2:
+                cout << "   Enter your 4-digit Easypaisa MPIN: ";
+                cin >> pin;
+                cout << "   Connecting to Easypaisa ...\n   Payment successful via Easypaisa.\n";
+                break;
+            case 3:
+                cout << "   Enter the LAST 4 digits of your card: ";
+                cin >> pin;
+                cout << "   Verifying card ending in " << pin << " ...\n   Payment successful via Card.\n";
+                break;
+            case 4:
+                cout << "   Please pay Rs. " << finalFare << " at the counter.\n   Booking is reserved (pay on arrival).\n";
+                break;
+            }
+
+            char answer;
+            int  attempts = 0;
+            int  goBackToMenu = 0;
+            cout << "\n   STEP 7 of 7  :  Confirm this booking? (y/n): ";
+            cin >> answer;
+
+            while (answer != 'y' && answer != 'Y' && answer != 'n' && answer != 'N')
+            {
+                attempts = attempts + 1;
+                if (attempts >= 5)
+                {
+                    currentSeats[(chosenRow - 1) * SEAT_COLUMNS + (chosenColumn - 1)] = 0;
+                    saveSeatMap(transport, carSeats, busSeats, planeSeats, currentSeats);
+                    cout << "\n   Too many invalid entries. Returning to the main menu.\n";
+                    cout << "   The seat has been released.\n";
+                    goBackToMenu = 1;
+                    break;
+                }
+                cout << "   Invalid choice. Please enter 'y' or 'n' (" << (5 - attempts) << " attempt(s) left): ";
+                cin >> answer;
+            }
+
+            if (goBackToMenu == 1) break;
+
+            if (answer == 'y' || answer == 'Y')
+            {
+                ticketCount   = ticketCount + 1;
+                activeTickets = activeTickets + 1;
+                totalEarnings = totalEarnings + finalFare;
+
+                ticketLetter[ticketCount]    = transportLetter;
+                ticketTransport[ticketCount] = transport;
+                ticketRow[ticketCount]       = chosenRow;
+                ticketColumn[ticketCount]    = chosenColumn;
+                ticketFrom[ticketCount]      = fromCity;
+                ticketTo[ticketCount]        = toCity;
+                ticketActive[ticketCount]    = 1;
+                ticketPrice[ticketCount]     = finalFare;
+
+                cout << "\n";
+                cout << "############################################################\n";
+                cout << "#              P A K I S T A N   T R A V E L               #\n";
+                cout << "#                 B O A R D I N G   P A S S                #\n";
+                cout << "############################################################\n";
+                cout << "   Passenger   : " << firstName << " " << lastName << "\n";
+                cout << "   Booking Ref : " << transportLetter << (1000 + ticketCount) << "\n";
+                cout << "   Transport   : ";
+                if (transport == 1) cout << "Car (Intercity Cab)\n";
+                else if (transport == 2) cout << "Bus (Luxury Coach)\n";
+                else cout << "Aeroplane (Domestic Flight)\n";
+                cout << "   Route       : " << getCityName(fromCity) << "  ->  " << getCityName(toCity) << "\n";
+                cout << "   Distance    : ~" << distanceKm << " km\n";
+                cout << "   Class       : ";
+                if (travelClass == 1) { if (transport == 2) cout << "Standard\n"; else cout << "Economy\n"; }
+                else { if (transport == 1) cout << "Premium AC\n"; else if (transport == 2) cout << "Executive\n"; else cout << "Business\n"; }
+                cout << "   Seat        : ";
+                if (chosenRow < 10) cout << "0";
+                cout << chosenRow << getColumnLetter(chosenColumn) << "\n";
+                cout << "   Category    : ";
+                if (ageCategory == 1) cout << "Child (age " << age << ")\n";
+                else if (ageCategory == 3) cout << "Senior Citizen (age " << age << ")\n";
+                else cout << "Adult (age " << age << ")\n";
+                cout << "------------------------------------------------------------\n";
+                cout << "   Base Fare   : Rs. " << baseFare << "\n";
+                cout << "   With Class  : Rs. " << fareWithClass << "\n";
+                if (ageCategory == 1) cout << "   Child 50%   : applied\n";
+                else if (ageCategory == 3) cout << "   Senior 20%  : applied\n";
+                else cout << "   Discount    : none\n";
+                cout << "   TOTAL PAID  : Rs. " << finalFare << "\n";
+                cout << "------------------------------------------------------------\n";
+                cout << "   Status      : CONFIRMED   --  Please keep this pass.\n";
+                cout << "############################################################\n";
+            }
+            else
+            {
+                currentSeats[(chosenRow - 1) * SEAT_COLUMNS + (chosenColumn - 1)] = 0;
+                saveSeatMap(transport, carSeats, busSeats, planeSeats, currentSeats);
+                cout << "\n   Booking cancelled. The seat has been released.\n";
+            }
+            break;
+        }
+
+        case 2:
+        {
+            int transport;
+            int rows = 0, columns = 0, aisleAfter = 0;
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  VIEW SEAT AVAILABILITY\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   [1]  Car      [2]  Bus      [3]  Aeroplane\n";
+            cout << "   Choice: ";
+            cin >> transport;
+            while (transport < 1 || transport > 3)
+            {
+                cout << "   Invalid. Enter 1, 2 or 3: ";
+                cin >> transport;
+            }
+            if (transport == 1)      { rows = 2;  columns = 2; aisleAfter = 0; }
+            else if (transport == 2) { rows = 10; columns = 4; aisleAfter = 2; }
+            else                     { rows = 12; columns = 6; aisleAfter = 3; }
+
+            loadSeatMap(transport, carSeats, busSeats, planeSeats, currentSeats);
+
+            cout << "------------------------------------------------------------\n";
+            int freeSeats = printSeatMap(currentSeats, rows, columns, aisleAfter);
+            cout << "------------------------------------------------------------\n";
+            cout << "   O = available        X = booked        || = aisle\n";
+            cout << "   Seats available: " << freeSeats << " out of " << (rows * columns) << "\n";
+            break;
+        }
+
+        case 3:
+        {
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  ABOUT  -  PAKISTAN TRAVEL EXPRESS\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   Book cars, buses and domestic flights across Pakistan.\n";
+            cout << "   Choose any departure and arrival city; the fare is\n";
+            cout << "   calculated from the distance between them.\n";
+            cout << "   Fares are in Pakistani Rupees (Rs.).\n";
+            cout << "\n";
+            cout << "   Children under 12 : 50% off     Seniors 60+ : 20% off\n";
+            cout << "   Payment: JazzCash, Easypaisa, Card, or Cash on Counter.\n";
+            cout << "   Cancel any booking to free its seat and get a refund.\n";
+            break;
+        }
+
+        case 4:
+        {
+            if (activeTickets == 0)
+            {
+                cout << "\n   You have no active tickets to cancel.\n";
+                break;
+            }
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  CANCEL A TICKET\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "  Enter the Booking Ref shown on your ticket (e.g. B1001):\n\n";
+
+            for (int ticketNo = 1; ticketNo <= ticketCount; ticketNo++)
+            {
+                if (ticketActive[ticketNo] == 1)
+                {
+                    cout << "   " << ticketLetter[ticketNo] << (1000 + ticketNo) << "   ";
+                    if (ticketTransport[ticketNo] == 1) cout << "Car   ";
+                    else if (ticketTransport[ticketNo] == 2) cout << "Bus   ";
+                    else cout << "Plane ";
+                    cout << getCityName(ticketFrom[ticketNo]) << " -> " << getCityName(ticketTo[ticketNo]);
+                    cout << "   Seat ";
+                    if (ticketRow[ticketNo] < 10) cout << "0";
+                    cout << ticketRow[ticketNo] << getColumnLetter(ticketColumn[ticketNo]) << "\n";
+                }
+            }
+            cout << "------------------------------------------------------------\n";
+            cout << "   Booking Ref (letter + number, 0 = back): ";
+
+            char enteredLetter;
+            int  enteredNumber = 0;
+            int  ticketIndex = 0;
+            int  validRef = 0;
+
+            while (validRef == 0)
+            {
+                cin >> enteredLetter;
+                if (enteredLetter == '0')
+                {
+                    ticketIndex = 0;
+                    validRef = 1;
+                }
+                else
+                {
+                    if (enteredLetter == 'a') enteredLetter = 'A';
+                    else if (enteredLetter == 'b') enteredLetter = 'B';
+                    else if (enteredLetter == 'c') enteredLetter = 'C';
+
+                    cin >> enteredNumber;
+                    ticketIndex = enteredNumber - 1000;
+
+                    if (ticketIndex < 1 || ticketIndex > ticketCount || ticketActive[ticketIndex] == 0 || ticketLetter[ticketIndex] != enteredLetter)
+                        cout << "   No active booking with that Ref. Try again (0 = back): ";
+                    else
+                        validRef = 1;
+                }
+            }
+            if (ticketIndex == 0) break;
+
+            int transport = ticketTransport[ticketIndex];
+            int seatRow = ticketRow[ticketIndex] - 1;
+            int seatColumn = ticketColumn[ticketIndex] - 1;
+            if (transport == 1) carSeats[seatRow * SEAT_COLUMNS + seatColumn] = 0;
+            else if (transport == 2) busSeats[seatRow * SEAT_COLUMNS + seatColumn] = 0;
+            else planeSeats[seatRow * SEAT_COLUMNS + seatColumn] = 0;
+
+            ticketActive[ticketIndex] = 0;
+            activeTickets = activeTickets - 1;
+            totalEarnings = totalEarnings - ticketPrice[ticketIndex];
+
+            cout << "\n";
+            cout << "   Booking " << ticketLetter[ticketIndex] << (1000 + ticketIndex) << " has been cancelled.\n";
+            cout << "   Seat ";
+            if (ticketRow[ticketIndex] < 10) cout << "0";
+            cout << ticketRow[ticketIndex] << getColumnLetter(ticketColumn[ticketIndex]) << " is now available again.\n";
+            cout << "   Refund issued: Rs. " << ticketPrice[ticketIndex] << "\n";
+            break;
+        }
+
+        case 0:
+            cout << "\n";
+            cout << "------------------------------------------------------------\n";
+            cout << "   Session summary\n";
+            cout << "   Active tickets : " << activeTickets << "\n";
+            cout << "   Total collected: Rs. " << totalEarnings << "\n";
+            cout << "   Thank you for choosing Pakistan Travel Express!\n";
+            cout << "------------------------------------------------------------\n";
+            break;
+
+        default:
+            cout << "\n   Invalid option. Please choose from the menu.\n";
+            break;
+        }
+
+    } while (menuChoice != 0);
+
+    return 0;
+}
